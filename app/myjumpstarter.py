@@ -97,7 +97,7 @@ class Jumpstart:
                     p = subprocess.run(["command", "-v", app_name])
                     if p.returncode != 0:
                         console.log("Install", app_name)
-                        installationMethod = self.__getAppInstallation__(app["type"])
+                        installationMethod = self.__getAppInstallation__(app)
                         p = subprocess.run(installationMethod, shell=True)
                     else:
                         console.log(app_name, "is already installed.")
