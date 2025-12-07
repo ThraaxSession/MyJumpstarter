@@ -18,8 +18,8 @@ myjumpstarter:
     - name: "MyNAS"
       provider: "davfs2"
       type: "webdav"
-      mounth-path: "/media"
+      mount-path: "/media"
       fstab: true
-      check: "test -t $mounth-path"
+      check: "test -t $mount-path"
 
     
