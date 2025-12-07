@@ -66,7 +66,7 @@ class Jumpstart:
             raise Exception("Error, there is no type for %s" % app["name"])
 
         if type == "native":
-            installationMethod += "sudo"
+            installationMethod.append("sudo")
             pkgmanager = self.__find_pkgmanager__()
             installationMethod += [pkgmanager.name, *pkgmanager.installArgs]
             installationMethod += [app["name"]]
