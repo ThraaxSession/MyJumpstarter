@@ -1,0 +1,25 @@
+myjumpstarter:
+  "tools":
+    - name: brew
+      cmd: "/bin/bash -c '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'"
+    - name: go
+      cmd: "brew install go"
+    - name: bin-install
+      cmd: "go install github.com/kaplan-michael/bin-install@latest"
+  "applications":
+    - name: zen-browser
+      type: "native"
+    - name: zed
+      type: "flatpak"
+    - name: MyCustom-App
+      type: "custom"
+      cmd: "bin-install --version"
+  "storage":
+    - name: "MyNAS"
+      provider: "davfs2"
+      type: "webdav"
+      mounth-path: "/media"
+      fstab: true
+      check: "test -t $mounth-path"
+
+    
