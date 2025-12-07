@@ -69,13 +69,13 @@ class Jumpstart:
             installationMethod += "sudo"
             pkgmanager = self.__find_pkgmanager__()
             installationMethod += [pkgmanager.name, *pkgmanager.installArgs]
-            installationMethod += app["name"]
+            installationMethod += [app["name"]]
         elif type == "flatpak":
             pkgmanager = self.__find_pkgmanager__(type)
             installationMethod += [pkgmanager.name, *pkgmanager.installArgs]
             if app["upgrade"]:
                 installationMethod += pkgmanager.upgradeArgs
-            installationMethod += app["name"]
+            installationMethod += [app["name"]]
         elif type == "custom":
             installationMethod = [app["cmd"]]
         return installationMethod
