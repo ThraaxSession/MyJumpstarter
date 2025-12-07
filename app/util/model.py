@@ -39,17 +39,17 @@ class Packagemanager:
     """
 
     name: str = ""
-    upgradeArgs = []
-    installArgs = []
+    upgrade_args = []
+    install_args = []
 
-    def __init__(self, name, upgradeArgs, *installArgs) -> None:
+    def __init__(self, name, upgrade_args, *install_args) -> None:
         self.name = name
-        self.upgradeArgs = upgradeArgs
-        self.installArgs = installArgs
+        self.upgrade_args = upgrade_args
+        self.install_args = install_args
 
     def __repr__(self) -> str:
         return "Packagemanager: %s, upgrade args: %s, install args: %s" % (
             self.name,
-            self.upgradeArgs,
-            self.installArgs,
+            self.upgrade_args,
+            self.install_args,
         )
