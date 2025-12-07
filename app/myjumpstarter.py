@@ -63,7 +63,7 @@ class Jumpstart:
         type = app["type"]
         installationMethod: list[str] = []
         if type is None:
-            Exception("Error, there is not type for %s", app)
+            raise Exception("Error, there is no type for %s" % app["name"])
 
         if type == "native":
             installationMethod += "sudo"
