@@ -119,11 +119,11 @@ class Jumpstart:
                     p = subprocess.run(["command", "-v", tool_name])
                     if p.returncode != 0:
                         console.log("Install or upgrade", tool_name)
-                        p = subprocess.run(tool["cmd"], shell=True)
-                        if p.stdout is not None:
-                            status.console.print(p.stdout)
-                        if p.stderr is not None:
-                            status.console.print("Error:", p.stderr)
+                        p = subprocess.run(tool["cmd"], shell=True, capture_output=True)
+                        if p.stdout:
+                            status.console.print(p.stdout.decode())
+                        if p.stderr:
+                            status.console.print("Error:", p.stderr.decode())
                     else:
                         console.log(tool_name, "is already installed.")
 
