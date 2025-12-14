@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from app.myjumpstarter import Jumpstart
+from app.textual.app import AppEntryPoint, MainScreen
 
 if __name__ == "__main__":
-    jumpstart = Jumpstart()
-    jumpstart.run()
+    app = AppEntryPoint()
+    app.run()

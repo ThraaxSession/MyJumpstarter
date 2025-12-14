@@ -1,4 +1,5 @@
 myjumpstarter:
+  # Test 123
   "tools":
     - name: brew
       cmd: "/bin/bash -c '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'"
@@ -14,6 +15,9 @@ myjumpstarter:
     - name: MyCustom-App
       type: "custom"
       cmd: "bin-install --version"
+    - name: "Test123"
+      type: "custom"
+      cmd: "echo 'Install Test123'"
   "storage":
     - name: "MyNAS"
       provider: "davfs2"

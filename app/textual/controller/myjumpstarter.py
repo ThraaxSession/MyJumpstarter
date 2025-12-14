@@ -4,8 +4,9 @@
 
 import subprocess
 import sys
+from typing import Dict
 
-from .util.model import Action, Packagemanager
+from app.textual.models.myjumpstarter import Action, Packagemanager
 
 try:
     import rich
@@ -40,11 +41,12 @@ class Jumpstart:
         Packagemanager("flatpak", ["upgrade"], ["install"]),
     ]
 
-    myconfig = {}
+    myconfig: dict = {}
+    config_path: str = "config.yaml"
 
     def __init__(self):
         # TODO add error handling
-        with open("config.yaml", "r") as configfile:
+        with open(self.config_path, "r") as configfile:
             # console.log("Read config.yaml", configfile)
             self.myconfig = yaml.safe_load(configfile)
 
@@ -68,17 +70,22 @@ class Jumpstart:
         if type == "native":
             installationMethod.append("sudo")
             pkgmanager = self.__find_pkgmanager__()
-            installationMethod += [pkgmanager.name, *pkgmanager.installArgs]
+            installationMethod += [pkgmanager.name, *pkgmanager.install_args]
             installationMethod += [app["name"]]
         elif type == "flatpak":
             pkgmanager = self.__find_pkgmanager__(type)
-            installationMethod += [pkgmanager.name, *pkgmanager.installArgs]
+            installationMethod += [pkgmanager.name, *pkgmanager.install_args]
             if app["upgrade"]:
-                installationMethod += pkgmanager.upgradeArgs
+                installationMethod += pkgmanager.upgrade_args
             installationMethod += [app["name"]]
         elif type == "custom":
             installationMethod = [app["cmd"]]
         return installationMethod
+
+    def load_config(self) -> Dict:
+        with open(self.config_path, "r") as configfile:
+            myconfig = yaml.safe_load(configfile)
+            return myconfig
 
     def install_applications(self):
         applications = self.myconfig["myjumpstarter"]["applications"]
@@ -130,57 +137,20 @@ class Jumpstart:
             console.print("Finished installing tools.")
 
     def upgrade_system(self):
-        with console.status("[bold green] Upgrade system... ") as status:
+        with console.status("[bold green] Upgrade system... "):
             pkgm = self.__find_pkgmanager__()
-            subprocess.run(["sudo", pkgm.name, *pkgm.upgradeArgs])
+            subprocess.run(["sudo", pkgm.name, *pkgm.upgrade_args])
         console.print("Finished upgrade")
 
-    def run(self):
-        pretty.install()
-        jumpstart = Jumpstart()
+    def get_actions(self):
+        # Define actions
+        installations = [
+            Action("Tool", "install", "ti", self.install_tools),
+            Action("Applications", "install", "ai", self.install_applications),
+        ]
+        system = [Action("System", "upgrade", "su", self.upgrade_system)]
+        jumpstarter = [Action("Jumpstart", "Exit", "exit", lambda: sys.exit(0))]
+        storage = [Action("Webdav", "create", "wc", None)]
+        actions = [installations, system, storage, jumpstarter]
 
-        while True:
-            # Clear logs and show "splash"
-            console.print()
-
-            # Define actions
-            installations = [
-                Action("Tool", "install", "ti", jumpstart.install_tools),
-                Action("Applications", "install", "ai", jumpstart.install_applications),
-            ]
-            system = [Action("System", "upgrade", "su", jumpstart.upgrade_system)]
-            jumpstarter = [Action("Jumpstart", "Exit", "exit", lambda: sys.exit(0))]
-            storage = [Action("Webdav", "create", "wc", None)]
-            allActions = [installations, system, storage, jumpstarter]
-
-            table = Table(show_header=True, header_style="bold")
-            table.add_column("Group")
-            table.add_column("Action")
-            table.add_column("Id")
-            table.add_column("Id")
-
-            for a in allActions:
-                for sa in a:
-                    table.add_row(sa.group, sa.action, sa.id)
-
-            mainlayout = Layout()
-            menulayout = Layout(
-                Panel(
-                    "Let's Jumpstart :rocket:. Available options", title="MyJumpstarter"
-                ),
-                ratio=1,
-            )
-            actionlayout = Layout(table, ratio=3)
-            mainlayout.split_column(menulayout, actionlayout)
-            menu_console.print(table)
-
-            # Still nasty to use ids.
-            # Better to "enter" the group and have sub-actions to execute like "update", "delete", etc.
-            choices = [b.id for a in allActions for b in a]
-            userAction = Prompt.ask(
-                "What do you want to do? Use the [bold cyan]id[/bold cyan]",
-                choices=choices,
-                default="exit",
-            )
-            action = [b for a in allActions for b in a if b.id == userAction][0]
-            action.callback()
+        return actions
