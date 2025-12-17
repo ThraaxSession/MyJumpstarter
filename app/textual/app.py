@@ -69,10 +69,13 @@ class MainScreen(Screen):
             with self.app.suspend():
                 ret = system("nano config.yaml")
                 if ret == 0:
-                    new_config = self.jumpstart.load_config()
-                    config_view = self.query_one("#config-display", ConfigView)
-                    config_view.config = new_config
-                    self.notify("Configuration reloaded!", timeout=5)
+                    try:
+                        new_config = self.jumpstart.load_config()
+                        config_view = self.query_one("#config-display", ConfigView)
+                        config_view.config = new_config
+                        self.notify("Configuration reloaded!", timeout=5)
+                    except Exception as e:
+                        self.notify(f"Failed to reload configuration: {e}", timeout=5)
 
     async def on_jumpstarter_jumpstart(self, message: Jumpstart) -> None:
         welcome_text = self.query_one("#welcome-text", Static)
@@ -96,7 +99,7 @@ class AppEntryPoint(App):
 
     CSS_PATH = "app.tcss"
     TITLE = "MyJumpstarter"
-    SUB_TITLE = "An Textual application with Jumpstarter"
+    SUB_TITLE = "A Textual application with Jumpstarter"
     BINDINGS = [("q", "on_quit", "Quit Application")]
     LOGO = "🚀"
 
