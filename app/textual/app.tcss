@@ -1,0 +1,46 @@
+MainScreen {
+    #jumpstarter {
+        border: round;
+        padding: 1;
+        width: 1fr;
+    }
+}
+
+JumpstartScreen {
+    Label {
+        margin-top: 1;
+        height: auto;
+    }
+    Log {
+        height: auto;
+    }
+}
+
+ConfigView {
+    border: dashed $secondary;
+    padding: 0;
+    height: auto;
+}
+
+OptionList {
+    border: solid $accent;
+    width: 0.3fr;
+    height: auto;
+}
+
+#config-controls {
+    border: double $secondary;
+    height: auto;
+    width: 0.5fr;
+}
+
+ActionWidget {
+    border: heavy $accent;
+    padding: 1;
+    height: auto;
+
+    #logs {
+        margin-top: 1;
+        height: auto;
+    }
+}
