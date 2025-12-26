@@ -6,28 +6,17 @@ import subprocess
 import sys
 from typing import Dict
 
+import aiofiles
+import yaml
+from rich.console import Console
+from rich.prompt import Confirm
+
 from app.textual.models.myjumpstarter import Action, Packagemanager
 
-try:
-    import rich
-    import yaml
-except ImportError:
-    print("Run pip3 install rich")
-    subprocess.run(["pip3", "install", "rich", "pyyaml"])
-finally:
-    import yaml
-    from rich import pretty
-    from rich.console import Console
-    from rich.layout import Layout
-    from rich.panel import Panel
-    from rich.prompt import Confirm, Prompt
-    from rich.table import Table
-
 console = Console()
-menu_console = Console(width=80)
 
 
-class Jumpstart:
+class Jumpstart(object):
     """
     Actual business logic to execute the actions
     """
@@ -42,25 +31,39 @@ class Jumpstart:
     ]
 
     myconfig: dict = {}
-    config_path: str = "config.yaml"
+    config_path: str = ""
 
-    def __init__(self):
-        # TODO add error handling
-        with open(self.config_path, "r") as configfile:
-            # console.log("Read config.yaml", configfile)
-            self.myconfig = yaml.safe_load(configfile)
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(Jumpstart, cls).__new__(cls)
+        return cls.instance
 
-    def __find_pkgmanager__(self, named: str = "") -> Packagemanager:
+    def __init__(self, config_path: str = "config.yaml"):
+        self.config_path = config_path
+
+        try:
+            with open(self.config_path, "r") as configfile:
+                self.myconfig = yaml.safe_load(configfile)
+        except Exception as e:
+            console.log(f"Error reading config file: {e}")
+            raise Exception("Cannot read config file")
+
+    def __clear_screen(self):
+        console.clear()
+
+    def __find_pkgmanager(self, named: str = "") -> Packagemanager:
         if named != "":
             return [p for p in self.pkgManagers if p.name == named][0]
         else:
             for pkgm in self.pkgManagers:
-                p = subprocess.run(["command", "-v", pkgm.name])
+                p = subprocess.run(
+                    f"command -v {pkgm.name}", shell=True, capture_output=True
+                )
                 if p.returncode == 0:
                     return pkgm
             return Packagemanager("", [], [])
 
-    def __getAppInstallation__(self, app) -> list[str]:
+    def __getAppInstallation(self, app) -> list[str]:
         # native, flatpak, custom
         type = app["type"]
         installationMethod: list[str] = []
@@ -69,11 +72,11 @@ class Jumpstart:
 
         if type == "native":
             installationMethod.append("sudo")
-            pkgmanager = self.__find_pkgmanager__()
+            pkgmanager = self.__find_pkgmanager()
             installationMethod += [pkgmanager.name, *pkgmanager.install_args]
             installationMethod += [app["name"]]
         elif type == "flatpak":
-            pkgmanager = self.__find_pkgmanager__(type)
+            pkgmanager = self.__find_pkgmanager(type)
             installationMethod += [pkgmanager.name, *pkgmanager.install_args]
             if app["upgrade"]:
                 installationMethod += pkgmanager.upgrade_args
@@ -82,12 +85,14 @@ class Jumpstart:
             installationMethod = [app["cmd"]]
         return installationMethod
 
-    def load_config(self) -> Dict:
-        with open(self.config_path, "r") as configfile:
-            myconfig = yaml.safe_load(configfile)
+    async def load_config(self) -> Dict:
+        async with aiofiles.open(self.config_path, "r") as configfile:
+            content = await configfile.read()
+            myconfig = yaml.safe_load(content)
             return myconfig
 
     def install_applications(self):
+        self.__clear_screen()
         applications = self.myconfig["myjumpstarter"]["applications"]
         console.log("Will install these applications", applications)
 
@@ -101,16 +106,25 @@ class Jumpstart:
                     app_name = app["name"]
 
                     console.log("Check for", app_name)
-                    p = subprocess.run(["command", "-v", app_name])
+                    p = subprocess.run(
+                        f"command -v {app_name}", shell=True, capture_output=True
+                    )
                     if p.returncode != 0:
                         console.log("Install", app_name)
-                        installationMethod = self.__getAppInstallation__(app)
-                        p = subprocess.run(installationMethod)
+                        installationMethod = self.__getAppInstallation(app)
+                        p = subprocess.run(
+                            installationMethod, shell=True, capture_output=True
+                        )
+                        if p.stderr is not None:
+                            console.log(p.stderr.decode())
+                        elif p.stdout is not None:
+                            console.log(p.stdout.decode())
                     else:
                         console.log(app_name, "is already installed.")
 
-    def install_tools(self):
-        tools = self.myconfig["myjumpstarter"]["tools"]
+    def run_tools(self):
+        self.__clear_screen()
+        tools = self.myconfig["receipts"]["tools"]
         console.log("Will install these tools", tools)
 
         result = Confirm.ask("Do you want to proceed?", default="y")
@@ -123,34 +137,80 @@ class Jumpstart:
                     tool_name = tool["name"]
                     # Check if tool is already installed
                     console.log("Check for", tool_name)
-                    p = subprocess.run(["command", "-v", tool_name])
-                    if p.returncode != 0:
-                        console.log("Install or upgrade", tool_name)
-                        p = subprocess.run(tool["cmd"], shell=True, capture_output=True)
-                        if p.stdout:
-                            status.console.print(p.stdout.decode())
-                        if p.stderr:
-                            status.console.print("Error:", p.stderr.decode())
-                    else:
-                        console.log(tool_name, "is already installed.")
+                    p_check_tool = subprocess.check_call(
+                        ["/usr/bin/bash", "-c", tool_name]
+                    )
+                    console.log(f"Check too: {p_check_tool}")
+                    if p_check_tool.returncode != 0:
+                        install_log = f"Installing {tool_name}..."
+                        status.update(install_log)
+                        yield install_log
 
-            console.print("Finished installing tools.")
+                        proc = subprocess.Popen(
+                            tool["cmd"].split(" "),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                        )
+                        stdout, stderr = proc.communicate()
+                        if stderr is not None:
+                            console.log(stderr.decode())
+                            yield stderr.decode()
+                        elif stdout is not None:
+                            console.log(stdout.decode())
+                            yield stdout.decode()
+                    else:
+                        finished = f"{tool_name} is already installed."
+                        status.update(finished)
+                        yield finished
+
+            finished_log = "Finished installing tools."
+            console.log(finished_log)
+            yield finished_log
 
     def upgrade_system(self):
+        self.__clear_screen()
         with console.status("[bold green] Upgrade system... "):
-            pkgm = self.__find_pkgmanager__()
-            subprocess.run(["sudo", pkgm.name, *pkgm.upgrade_args])
+            pkgm = self.__find_pkgmanager()
+            try:
+                proc_update = subprocess.Popen(
+                    ["sudo", pkgm.name, "update"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                stdout, stderr = proc_update.communicate()
+                for line in io.TextIOWrapper(stdout, encoding="utf-8"):
+                    console.log(line)
+                    yield line
+                for line in io.TextIOWrapper(stderr, encoding="utf-8"):
+                    console.log(line)
+                    yield line
+
+            except Exception as e:
+                console.log("Error during update:", e)
+                proc_upgrade = subprocess.Popen(
+                    ["sudo", pkgm.name, *pkgm.upgrade_args],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                stdout, stderr = proc_upgrade.communicate()
+                if stderr is not None:
+                    console.log(stderr.decode())
+                    yield stderr.decode()
+                elif stdout is not None:
+                    console.log(stdout.decode())
+                    yield stdout.decode()
+
         console.print("Finished upgrade")
 
     def get_actions(self):
         # Define actions
-        installations = [
-            Action("Tool", "install", "ti", self.install_tools),
-            Action("Applications", "install", "ai", self.install_applications),
+        system = [Action("System", "Upgrade", "su", self.upgrade_system)]
+        applications = [
+            Action("Applications", "Install", "ai", self.install_applications)
         ]
-        system = [Action("System", "upgrade", "su", self.upgrade_system)]
+        tools = [Action("Tools", "Run", "ti", self.run_tools)]
         jumpstarter = [Action("Jumpstart", "Exit", "exit", lambda: sys.exit(0))]
-        storage = [Action("Webdav", "create", "wc", None)]
-        actions = [installations, system, storage, jumpstarter]
+        storage = [Action("Storage", "Create", "wc", None)]
+        actions = [system, applications, tools, storage, jumpstarter]
 
         return actions

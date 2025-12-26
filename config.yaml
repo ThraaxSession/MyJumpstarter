@@ -1,29 +1,25 @@
-myjumpstarter:
-  # Test 123
-  "tools":
-    - name: brew
-      cmd: "/bin/bash -c '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'"
-    - name: go
-      cmd: "brew install go"
-    - name: bin-install
-      cmd: "go install github.com/kaplan-michael/bin-install@latest"
-  "applications":
-    - name: zen-browser
-      type: "native"
-    - name: zed
-      type: "flatpak"
-    - name: MyCustom-App
-      type: "custom"
-      cmd: "bin-install --version"
-    - name: "Test123"
-      type: "custom"
-      cmd: "echo 'Install Test123'"
-  "storage":
-    - name: "MyNAS"
-      provider: "davfs2"
-      type: "webdav"
-      mount-path: "/media"
-      fstab: true
-      check: "test -t $mount-path"
+receipts:
+    "tools":
+        - name: brew
+          cmd: "/usr/bin/bash/ $(curl -fsSL 'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh')"
+          #cmd: "curl -fsSL 'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 
-    
+        - name: go
+          cmd: "brew install go"
+        - name: bin-install
+          cmd: "go install github.com/kaplan-michael/bin-install@latest"
+    "applications":
+        - name: zen-browser
+          type: "native"
+        - name: zed
+          type: "flatpak"
+        - name: MyCustom-App
+          type: "custom"
+          cmd: "bin-install --version"
+    "storage":
+        - name: "MyNAS"
+          provider: "davfs2"
+          type: "webdav"
+          mount-path: "/media"
+          fstab: true
+          check: "test -t $mount-path"

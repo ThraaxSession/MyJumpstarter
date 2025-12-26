@@ -1,49 +1,46 @@
 MainScreen {
-
     #jumpstarter {
         border: round;
-        padding: 2;
+        padding: 1;
         width: 1fr;
     }
+}
 
-    .main-buttons {
-        padding: 1;
-        margin-top: 2;
+JumpstartScreen {
+    Label {
+        margin-top: 1;
         height: auto;
     }
-
-    Button {
-        margin-top: 1;
-    }
-
-    ConfigView {
-        border: dashed $secondary;
-        padding: 0;
+    Log {
         height: auto;
     }
 }
 
-Sidebar {
+ConfigView {
+    border: dashed $secondary;
+    padding: 0;
+    height: auto;
+}
+
+OptionList {
+    border: solid $accent;
     width: 0.3fr;
-    /* Needs to go in its own layer to sit above content */
-    layer: sidebar;
-    /* Dock the sidebar to the appropriate side */
-    dock: left;
-    /* Offset x to be -100% to move it out of view by default */
-    offset-x: -100%;
+    height: auto;
+}
 
-    background: $primary;
-    border-right: vkey $background;
+#config-controls {
+    border: double $secondary;
+    height: auto;
+    width: 0.5fr;
+}
 
-    /* Enable animation */
-    transition: offset 200ms;
+ActionWidget {
+    border: heavy $accent;
+    padding: 1;
+    height: auto;
 
-    &.-visible {
-        /* Set offset.x to 0 to make it visible when class is applied */
-        offset-x: 0;
-    }
-
-    & > Vertical {
-        margin: 1 2;
+    #logs {
+        margin-top: 1;
+        height: auto;
     }
 }
